@@ -14,18 +14,49 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; }
     body, html { width: 100%; height: 100%; overflow: hidden; background: transparent; }
 
+    /* ================= 關鍵：只把底層相機畫面變暗成夜晚，AR 動物保持明亮 ================= */
+    video {
+      transition: filter 0.6s ease !important;
+    }
+    body.night-mode video {
+      filter: brightness(0.34) contrast(1.18) saturate(0.55) hue-rotate(12deg) !important;
+    }
+
     /* ================= 階段一：AR 夜間透視介面 ================= */
     #stage-ar { position: relative; width: 100%; height: 100%; }
 
-   /* 夜間透視濾鏡（真實黑夜模式：壓暗亮度 ＋ 深藍月光色調） */
+    /* 深夜月光暗角 ＋ 螢火蟲容器（中間微透、四周深藍，不遮擋動物亮度） */
     #night-vision-overlay {
       position: fixed; inset: 0; pointer-events: none; z-index: 10;
-      background: radial-gradient(circle, rgba(8, 18, 48, 0.45) 25%, rgba(2, 6, 20, 0.88) 100%);
-      backdrop-filter: brightness(0.3) contrast(1.15) saturate(0.65);
-      -webkit-backdrop-filter: brightness(0.42) contrast(1.15) saturate(0.65);
-      opacity: 0; transition: opacity 0.45s ease;
+      background: radial-gradient(circle, rgba(12, 28, 65, 0.12) 32%, rgba(2, 8, 24, 0.85) 100%);
+      opacity: 0; transition: opacity 0.6s ease;
+      overflow: hidden;
     }
     #night-vision-overlay.active { opacity: 1; }
+
+    /* 螢火蟲微光粒子 */
+    .firefly {
+      position: absolute;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #eaff7b;
+      box-shadow: 0 0 10px 3px rgba(210, 255, 110, 0.85);
+      opacity: 0;
+      animation: fireflyFloat 5s infinite ease-in-out;
+    }
+    .firefly:nth-child(1) { top: 22%; left: 18%; animation-delay: 0s; animation-duration: 4.5s; }
+    .firefly:nth-child(2) { top: 68%; left: 82%; animation-delay: 1.2s; animation-duration: 5.8s; }
+    .firefly:nth-child(3) { top: 35%; left: 78%; animation-delay: 2.4s; animation-duration: 4.2s; }
+    .firefly:nth-child(4) { top: 75%; left: 22%; animation-delay: 0.8s; animation-duration: 5.2s; }
+    .firefly:nth-child(5) { top: 50%; left: 12%; animation-delay: 1.8s; animation-duration: 6s; }
+    .firefly:nth-child(6) { top: 28%; left: 55%; animation-delay: 3s; animation-duration: 4.8s; }
+
+    @keyframes fireflyFloat {
+      0%, 100% { transform: translate(0, 0) scale(0.7); opacity: 0.15; }
+      40% { transform: translate(16px, -22px) scale(1.2); opacity: 0.95; }
+      75% { transform: translate(-12px, -36px) scale(0.9); opacity: 0.5; }
+    }
+
     /* AR 頂部提示與進度列 */
     #ar-ui {
       position: fixed; top: 0; left: 0; right: 0; z-index: 20;
@@ -36,12 +67,12 @@
       display: flex; justify-content: space-between; align-items: center; gap: 8px;
     }
     .status-badge {
-      background: rgba(0, 0, 0, 0.65); color: #fff; padding: 8px 14px;
+      background: rgba(5, 12, 28, 0.72); color: #fff; padding: 8px 14px;
       border-radius: 20px; font-size: 14px; backdrop-filter: blur(4px);
       border: 1px solid rgba(255,255,255,0.2); flex: 1; line-height: 1.4;
     }
     .night-tag {
-      color: #4ade80; font-weight: bold; display: none; margin-right: 6px;
+      color: #fde047; font-weight: bold; display: none; margin-right: 6px;
     }
     #night-vision-overlay.active ~ #ar-ui .night-tag { display: inline; }
 
@@ -57,7 +88,7 @@
       z-index: 20; pointer-events: none;
     }
     .counter-pill {
-      background: rgba(0, 0, 0, 0.72); color: #fff; padding: 10px 22px;
+      background: rgba(5, 12, 28, 0.78); color: #fff; padding: 10px 22px;
       border-radius: 999px; font-size: 15px; border: 1px solid rgba(255,255,255,0.25);
       white-space: nowrap; backdrop-filter: blur(4px);
     }
@@ -201,12 +232,19 @@
 
   <!-- ================= 階段一：AR 掃描 ================= -->
   <div id="stage-ar">
-    <div id="night-vision-overlay"></div>
+    <div id="night-vision-overlay">
+      <div class="firefly"></div>
+      <div class="firefly"></div>
+      <div class="firefly"></div>
+      <div class="firefly"></div>
+      <div class="firefly"></div>
+      <div class="firefly"></div>
+    </div>
 
     <div id="ar-ui">
       <div class="ar-header">
         <div class="status-badge">
-          <span class="night-tag">● 夜間透視啟動</span>
+          <span class="night-tag">🌙 夜間透視啟動</span>
           <span id="ar-hint">請將鏡頭對準草原看板，開啟夜間透視</span>
         </div>
         <button id="btn-skip" onclick="enterGameStage()">直接進配對</button>
@@ -414,11 +452,13 @@
     let catchToastTimer = null;
 
     targetBoard.addEventListener("targetFound", () => {
+      document.body.classList.add("night-mode");
       nightOverlay.classList.add("active");
       arHint.textContent = "快點擊畫面中浮現的動物！";
     });
 
     targetBoard.addEventListener("targetLost", () => {
+      document.body.classList.remove("night-mode");
       nightOverlay.classList.remove("active");
       arHint.textContent = "請將鏡頭對準草原看板，開啟夜間透視";
     });
@@ -463,6 +503,7 @@
 
     function enterGameStage() {
       SoundFX.init();
+      document.body.classList.remove("night-mode");
       const sceneEl = document.querySelector("a-scene");
       if (sceneEl && sceneEl.systems["mindar-image-system"]) {
         try { sceneEl.systems["mindar-image-system"].stop(); } catch (e) {}

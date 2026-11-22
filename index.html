@@ -17,10 +17,19 @@
     /* ================= 階段一：AR 夜間透視介面 ================= */
     #stage-ar { position: relative; width: 100%; height: 100%; }
 
-    /* 夜間透視濾鏡（預設隱藏，掃到看板時開啟） */
+    /* 夜間透視濾鏡（強化夜視鏡綠光 ＋ 掃描線 ＋ 內發光邊框） */
     #night-vision-overlay {
       position: fixed; inset: 0; pointer-events: none; z-index: 10;
-      background: radial-gradient(circle, rgba(10, 45, 75, 0.25) 30%, rgba(5, 20, 40, 0.78) 100%);
+      background:
+        repeating-linear-gradient(
+          0deg,
+          rgba(0, 255, 100, 0.06) 0px,
+          rgba(0, 255, 100, 0.06) 2px,
+          transparent 2px,
+          transparent 4px
+        ),
+        radial-gradient(circle, rgba(16, 185, 129, 0.22) 35%, rgba(2, 25, 15, 0.82) 100%);
+      box-shadow: inset 0 0 60px rgba(0, 255, 128, 0.35);
       opacity: 0; transition: opacity 0.4s ease;
     }
     #night-vision-overlay.active { opacity: 1; }

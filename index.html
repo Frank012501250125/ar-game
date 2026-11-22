@@ -17,23 +17,15 @@
     /* ================= 階段一：AR 夜間透視介面 ================= */
     #stage-ar { position: relative; width: 100%; height: 100%; }
 
-   /* 夜間透視濾鏡（加深夜視暗度 ＋ 明顯掃描線） */
+   /* 夜間透視濾鏡（真實黑夜模式：壓暗亮度 ＋ 深藍月光色調） */
     #night-vision-overlay {
       position: fixed; inset: 0; pointer-events: none; z-index: 10;
-      background:
-        repeating-linear-gradient(
-          0deg,
-          rgba(0, 255, 100, 0.12) 0px,
-          rgba(0, 255, 100, 0.12) 2px,
-          transparent 2px,
-          transparent 5px
-        ),
-        radial-gradient(circle, rgba(5, 45, 25, 0.55) 30%, rgba(0, 15, 8, 0.92) 100%);
-      box-shadow: inset 0 0 80px rgba(0, 255, 128, 0.45);
-      opacity: 0; transition: opacity 0.4s ease;
+      background: radial-gradient(circle, rgba(8, 18, 48, 0.45) 25%, rgba(2, 6, 20, 0.88) 100%);
+      backdrop-filter: brightness(0.42) contrast(1.15) saturate(0.65);
+      -webkit-backdrop-filter: brightness(0.42) contrast(1.15) saturate(0.65);
+      opacity: 0; transition: opacity 0.45s ease;
     }
     #night-vision-overlay.active { opacity: 1; }
-
     /* AR 頂部提示與進度列 */
     #ar-ui {
       position: fixed; top: 0; left: 0; right: 0; z-index: 20;

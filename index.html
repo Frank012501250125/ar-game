@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>飛牛棲地救援 - AR 透視與配對任務</title>
-  
+
   <!-- 引入 A-Frame 與 MindAR -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; }
-    body, html { width: 100%; height: 100%; overflow: hidden; background: #111; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background: transparent; }
 
     /* ================= 階段一：AR 夜間透視介面 ================= */
     #stage-ar { position: relative; width: 100%; height: 100%; }
@@ -31,146 +31,143 @@
       display: flex; flex-direction: column; gap: 10px;
     }
     .ar-header {
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
     }
     .status-badge {
       background: rgba(0, 0, 0, 0.65); color: #fff; padding: 8px 14px;
       border-radius: 20px; font-size: 14px; backdrop-filter: blur(4px);
-      border: 1px solid rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.2); flex: 1; line-height: 1.4;
     }
     .night-tag {
       color: #4ade80; font-weight: bold; display: none; margin-right: 6px;
     }
     #night-vision-overlay.active ~ #ar-ui .night-tag { display: inline; }
 
-    /* Demo 備用按鈕（防教室反光掃不到） */
-    #demo-skip-btn {
-      pointer-events: auto; background: rgba(255, 255, 255, 0.2); color: #ddd;
-      border: 1px solid rgba(255,255,255,0.3); border-radius: 14px;
-      padding: 6px 10px; font-size: 12px; cursor: pointer;
+    #btn-skip {
+      pointer-events: auto; background: rgba(255,255,255,0.2); color: #fff;
+      border: 1px solid rgba(255,255,255,0.4); border-radius: 14px;
+      padding: 8px 12px; font-size: 13px; cursor: pointer; backdrop-filter: blur(4px);
+      white-space: nowrap;
     }
 
-    /* 底部捕捉進度列 */
-    #catch-bar {
+    #ar-footer {
       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-      z-index: 20; background: rgba(0, 0, 0, 0.72); color: #fff;
-      padding: 10px 20px; border-radius: 24px; font-size: 15px;
+      z-index: 20; pointer-events: none;
+    }
+    .counter-pill {
+      background: rgba(0, 0, 0, 0.72); color: #fff; padding: 10px 22px;
+      border-radius: 999px; font-size: 15px; border: 1px solid rgba(255,255,255,0.25);
       white-space: nowrap; backdrop-filter: blur(4px);
-      border: 1px solid rgba(255,255,255,0.2);
     }
 
-    /* ================= 階段二：2D 拖曳配對介面 ================= */
-    #stage-drag {
+    /* ================= 階段二：2D 棲地配對介面 ================= */
+    #stage-game {
       display: none; position: fixed; inset: 0; z-index: 50;
-      background: #f4f7f5; flex-direction: column;
-      user-select: none; -webkit-user-select: none;
+      background: #f4f7f4; flex-direction: column;
     }
-    #stage-drag.active { display: flex; }
-
-    .drag-header {
-      background: #1e4620; color: #fff; padding: 14px 16px;
-      text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    .game-header {
+      background: #1b5e20; color: #fff; text-align: center;
+      padding: 14px 16px; flex-shrink: 0;
     }
-    .drag-header h2 { font-size: 18px; margin-bottom: 4px; }
-    .drag-header p { font-size: 13px; color: #cde6cf; }
+    .game-header h1 { font-size: 20px; margin-bottom: 4px; }
+    .game-header p { font-size: 13px; opacity: 0.9; }
 
-    /* 棲地放置區 */
     .habitats-container {
       flex: 1; display: flex; flex-direction: column; gap: 10px;
-      padding: 12px; overflow: hidden;
+      padding: 12px 14px; overflow-y: auto;
     }
     .habitat-zone {
-      flex: 1; position: relative; border-radius: 14px; overflow: hidden;
+      position: relative; flex: 1; min-height: 110px; border-radius: 16px;
       background-size: cover; background-position: center;
-      border: 3px dashed rgba(255,255,255,0.7);
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 16px; transition: transform 0.2s, border-color 0.2s;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+      border: 3px dashed rgba(255,255,255,0.85); overflow: hidden;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 14px 16px; transition: transform 0.15s, border-color 0.15s;
     }
     .habitat-zone::before {
       content: ""; position: absolute; inset: 0;
-      background: rgba(0, 0, 0, 0.32); z-index: 1;
+      background: linear-gradient(90deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.25) 100%);
     }
-    .habitat-zone.highlight {
-      border: 3px solid #facc15; transform: scale(1.02);
-      box-shadow: 0 0 16px rgba(250, 204, 21, 0.7);
+    .habitat-zone.drag-over {
+      transform: scale(1.02); border-color: #4ade80; border-style: solid;
     }
-    .habitat-label {
-      position: relative; z-index: 2; color: #fff;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-    }
-    .habitat-label h3 { font-size: 18px; }
-    .habitat-label span { font-size: 12px; opacity: 0.9; }
+    .habitat-info { position: relative; z-index: 2; color: #fff; pointer-events: none; }
+    .habitat-info h2 { font-size: 18px; margin-bottom: 4px; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+    .habitat-info p { font-size: 12px; opacity: 0.95; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+
     .placed-animals {
-      position: relative; z-index: 2; display: flex; gap: 8px;
+      position: absolute; right: 12px; bottom: 8px; z-index: 2;
+      display: flex; gap: 6px; pointer-events: none;
     }
     .placed-animals img {
-      width: 56px; height: 56px; object-fit: contain;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
-      animation: popIn 0.35s ease;
+      height: 52px; width: auto; object-fit: contain;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
     }
 
-    /* 底部待救援動物托盤 */
+    /* 底部動物拖曳區 */
     .animal-tray {
-      height: 120px; background: #fff; border-top: 1px solid #ddd;
-      display: flex; justify-content: space-around; align-items: center;
-      padding: 10px; box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+      background: #fff; padding: 12px 10px 18px; flex-shrink: 0;
+      border-top: 1px solid #e0e6e0; display: grid;
+      grid-template-columns: repeat(4, 1fr); gap: 8px;
     }
     .animal-card {
-      width: 78px; height: 92px; background: #eef5ef; border-radius: 12px;
-      border: 2px solid #b7d7ba; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; padding: 6px;
-      touch-action: none; cursor: grab; transition: transform 0.15s;
+      background: #f8fbf8; border: 2px solid #c8dbc8; border-radius: 14px;
+      padding: 8px 4px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 4px;
+      touch-action: none; user-select: none; cursor: grab;
+      transition: opacity 0.2s, transform 0.15s;
     }
-    .animal-card img { width: 58px; height: 58px; object-fit: contain; pointer-events: none; }
-    .animal-card span { font-size: 12px; font-weight: bold; color: #2c4c2e; margin-top: 2px; pointer-events: none; }
-    .animal-card.dragging {
-      position: fixed; z-index: 999; opacity: 0.92;
-      transform: scale(1.15); box-shadow: 0 10px 24px rgba(0,0,0,0.3);
-      pointer-events: none;
+    .animal-card img {
+      width: 56px; height: 48px; object-fit: contain; pointer-events: none;
     }
-    .animal-card.solved { opacity: 0.25; pointer-events: none; filter: grayscale(1); }
+    .animal-card span { font-size: 13px; font-weight: bold; color: #2e4a2e; pointer-events: none; }
+    .animal-card.matched { opacity: 0.25; pointer-events: none; filter: grayscale(1); }
 
-    /* 錯誤提示吐司 */
+    /* 拖曳中的浮動影子 */
+    .dragging-ghost {
+      position: fixed; z-index: 999; pointer-events: none;
+      width: 80px; height: 80px; object-fit: contain;
+      transform: translate(-50%, -50%) scale(1.15);
+      filter: drop-shadow(0 6px 12px rgba(0,0,0,0.35));
+    }
+
+    /* 錯誤提示 Toast */
     #toast {
       position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
-      z-index: 200; background: #dc2626; color: #fff; padding: 10px 18px;
-      border-radius: 20px; font-size: 14px; font-weight: bold;
-      opacity: 0; pointer-events: none; transition: opacity 0.3s;
-      white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      background: #d32f2f; color: #fff; padding: 10px 20px; border-radius: 999px;
+      font-size: 14px; z-index: 200; opacity: 0; pointer-events: none;
+      transition: opacity 0.25s; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
     #toast.show { opacity: 1; }
 
-    /* 生態知識彈窗 & 過關彈窗 */
+    /* 知識彈窗與通關彈窗 */
     .modal-backdrop {
-      display: none; position: fixed; inset: 0; z-index: 300;
-      background: rgba(0,0,0,0.65); align-items: center; justify-content: center;
-      padding: 20px;
+      display: none; position: fixed; inset: 0; z-index: 150;
+      background: rgba(0,0,0,0.6); align-items: center; justify-content: center;
+      padding: 20px; backdrop-filter: blur(2px);
     }
     .modal-backdrop.show { display: flex; }
     .modal-card {
-      background: #fff; width: 100%; max-width: 340px; border-radius: 18px;
-      padding: 22px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-      animation: popIn 0.3s ease;
+      background: #fff; width: 100%; max-width: 340px; border-radius: 22px;
+      padding: 26px 22px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,0.25);
     }
-    .modal-card img { width: 110px; height: 110px; object-fit: contain; margin-bottom: 10px; }
-    .modal-card h3 { color: #1e4620; font-size: 20px; margin-bottom: 8px; }
-    .modal-card p { color: #444; font-size: 14px; line-height: 1.6; text-align: left; margin-bottom: 18px; }
+    .modal-card img {
+      width: 110px; height: 90px; object-fit: contain; margin-bottom: 12px;
+    }
+    .modal-card h3 { font-size: 20px; color: #1b5e20; margin-bottom: 12px; }
+    .modal-card p { font-size: 14px; color: #444; line-height: 1.65; margin-bottom: 20px; text-align: left; }
     .modal-btn {
-      background: #2e7d32; color: #fff; border: none; border-radius: 24px;
-      padding: 12px 28px; font-size: 15px; font-weight: bold; width: 100%; cursor: pointer;
+      width: 100%; background: #2e7d32; color: #fff; border: none;
+      padding: 13px; border-radius: 999px; font-size: 15px; font-weight: bold;
+      cursor: pointer;
     }
-    .credit { font-size: 11px; color: #888; margin-top: 12px; }
-
-    @keyframes popIn {
-      from { transform: scale(0.8); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
+    .credit-text {
+      margin-top: 14px; font-size: 11px; color: #888;
     }
   </style>
 </head>
 <body>
 
-  <!-- ================= 階段一：AR 夜間透視場景 ================= -->
+  <!-- ================= 階段一：AR 掃描 ================= -->
   <div id="stage-ar">
     <div id="night-vision-overlay"></div>
 
@@ -178,107 +175,107 @@
       <div class="ar-header">
         <div class="status-badge">
           <span class="night-tag">● 夜間透視啟動</span>
-          <span id="ar-hint">請對準白天生態看板掃描</span>
+          <span id="ar-hint">請將鏡頭對準草原看板，開啟夜間透視</span>
         </div>
-        <button id="demo-skip-btn" onclick="enterDragStage()">直接進配對</button>
+        <button id="btn-skip" onclick="enterGameStage()">直接進配對</button>
       </div>
     </div>
 
-    <div id="catch-bar">點擊出現的動物進行捕捉：<span id="catch-count">0</span> / 4</div>
+    <div id="ar-footer">
+      <div class="counter-pill">點擊出現的動物進行捕捉：<span id="caught-count">0</span> / 4</div>
+    </div>
 
     <a-scene
-      mindar-image="imageTargetSrc: ./targets.mind; uiScanning: yes;"
+      mindar-image="imageTargetSrc: ./targets.mind; uiScanning: no;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights"
       vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: false"
-      cursor="fuse: false; rayOrigin: mouse;"
-      raycaster="far: 10000; objects: .clickable">
+      device-orientation-permission-ui="enabled: false">
 
       <a-assets>
-        <img id="img-cow" src="./cow.png" />
-        <img id="img-goat" src="./goat.png" />
-        <img id="img-goose" src="./goose.png" />
-        <img id="img-butterfly" src="./butterfly.png" />
+        <img id="img-cow" src="./cow.png" crossorigin="anonymous">
+        <img id="img-goat" src="./goat.png" crossorigin="anonymous">
+        <img id="img-goose" src="./goose.png" crossorigin="anonymous">
+        <img id="img-butterfly" src="./butterfly.png" crossorigin="anonymous">
       </a-assets>
 
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="far: 10000; objects: .clickable"></a-camera>
 
-      <!-- 綁定 0 號看板（IMG_6854） -->
-      <a-entity id="ar-target" mindar-image-target="targetIndex: 0">
-        <!-- 乳牛（左下方草地） -->
-        <a-image id="ar-cow" class="clickable" src="#img-cow" position="-0.32 -0.18 0.08" width="0.38" height="0.32"
-          animation="property: position; to: -0.32 -0.14 0.08; dir: alternate; dur: 1200; loop: true"></a-image>
+      <a-entity id="target-board" mindar-image-target="targetIndex: 0">
+        <!-- 4 隻隱藏動物 -->
+        <a-image id="ar-cow" class="clickable" src="#img-cow" position="-0.32 -0.15 0.1" width="0.38" height="0.28"
+          animation="property: position; to: -0.32 -0.11 0.1; dir: alternate; dur: 1400; loop: true; easing: easeInOutSine"></a-image>
 
-        <!-- 山羊（右下方草坡） -->
-        <a-image id="ar-goat" class="clickable" src="#img-goat" position="0.32 -0.22 0.08" width="0.32" height="0.32"
-          animation="property: position; to: 0.32 -0.18 0.08; dir: alternate; dur: 1400; loop: true"></a-image>
+        <a-image id="ar-goat" class="clickable" src="#img-goat" position="0.32 -0.22 0.12" width="0.38" height="0.28"
+          animation="property: position; to: 0.32 -0.18 0.12; dir: alternate; dur: 1600; loop: true; easing: easeInOutSine"></a-image>
 
-        <!-- 白鵝（中上方） -->
-        <a-image id="ar-goose" class="clickable" src="#img-goose" position="-0.25 0.22 0.08" width="0.30" height="0.34"
-          animation="property: position; to: -0.25 0.26 0.08; dir: alternate; dur: 1300; loop: true"></a-image>
+        <a-image id="ar-goose" class="clickable" src="#img-goose" position="-0.25 0.22 0.12" width="0.28" height="0.28"
+          animation="property: position; to: -0.25 0.26 0.12; dir: alternate; dur: 1300; loop: true; easing: easeInOutSine"></a-image>
 
-        <!-- 紫斑蝶（右上方樹林） -->
-        <a-image id="ar-butterfly" class="clickable" src="#img-butterfly" position="0.28 0.25 0.10" width="0.28" height="0.24"
-          animation="property: position; to: 0.28 0.30 0.10; dir: alternate; dur: 900; loop: true"></a-image>
+        <a-image id="ar-butterfly" class="clickable" src="#img-butterfly" position="0.28 0.25 0.15" width="0.32" height="0.26"
+          animation="property: position; to: 0.28 0.31 0.15; dir: alternate; dur: 1100; loop: true; easing: easeInOutSine"></a-image>
       </a-entity>
     </a-scene>
   </div>
 
-  <!-- ================= 階段二：2D 棲地拖曳配對 ================= -->
-  <div id="stage-drag">
-    <div class="drag-header">
-      <h2>飛牛棲地救援任務</h2>
-      <p>將捕捉到的動物，拖曳回最適合牠的自然棲地（進度：<span id="rescue-count">0</span>/4）</p>
+  <!-- ================= 階段二：2D 棲地配對 ================= -->
+  <div id="stage-game">
+    <div class="game-header">
+      <h1>飛牛棲地救援任務</h1>
+      <p>將捕捉到的動物，拖曳回最適合牠的自然棲地（進度：<span id="match-count">0</span>/4）</p>
     </div>
 
     <div class="habitats-container">
       <div class="habitat-zone" data-habitat="grass" style="background-image: url('./bg_grass.jpg');">
-        <div class="habitat-label">
-          <h3>開闊草原區</h3>
-          <span>適合食草、需要寬廣活動空間的動物</span>
+        <div class="habitat-info">
+          <h2>開闊草原區</h2>
+          <p>適合食草、需要寬廣活動空間的動物</p>
         </div>
         <div class="placed-animals" id="placed-grass"></div>
       </div>
 
       <div class="habitat-zone" data-habitat="water" style="background-image: url('./bg_water.jpg');">
-        <div class="habitat-label">
-          <h3>生態水域區</h3>
-          <span>適合親水、於池塘與岸邊覓食的水禽</span>
+        <div class="habitat-info">
+          <h2>生態水域區</h2>
+          <p>適合親水、於池塘與岸邊覓食的水禽</p>
         </div>
         <div class="placed-animals" id="placed-water"></div>
       </div>
 
       <div class="habitat-zone" data-habitat="forest" style="background-image: url('./bg_forest.jpg');">
-        <div class="habitat-label">
-          <h3>複層林與蜜源區</h3>
-          <span>具備豐富植被與特定蜜源植物的林蔭環境</span>
+        <div class="habitat-info">
+          <h2>複層林與蜜源區</h2>
+          <p>具備豐富植被與特定蜜源植物的林蔭環境</p>
         </div>
         <div class="placed-animals" id="placed-forest"></div>
       </div>
     </div>
 
     <div class="animal-tray">
-      <div class="animal-card" data-id="cow" data-habitat="grass">
-        <img src="./cow.png" alt="乳牛"><span>乳牛</span>
+      <div class="animal-card" data-id="cow" data-target="grass">
+        <img src="./cow.png" alt="乳牛">
+        <span>乳牛</span>
       </div>
-      <div class="animal-card" data-id="goat" data-habitat="grass">
-        <img src="./goat.png" alt="山羊"><span>山羊</span>
+      <div class="animal-card" data-id="goat" data-target="grass">
+        <img src="./goat.png" alt="山羊">
+        <span>山羊</span>
       </div>
-      <div class="animal-card" data-id="goose" data-habitat="water">
-        <img src="./goose.png" alt="白鵝"><span>白鵝</span>
+      <div class="animal-card" data-id="goose" data-target="water">
+        <img src="./goose.png" alt="白鵝">
+        <span>白鵝</span>
       </div>
-      <div class="animal-card" data-id="butterfly" data-habitat="forest">
-        <img src="./butterfly.png" alt="紫斑蝶"><span>紫斑蝶</span>
+      <div class="animal-card" data-id="butterfly" data-target="forest">
+        <img src="./butterfly.png" alt="紫斑蝶">
+        <span>紫斑蝶</span>
       </div>
     </div>
   </div>
 
   <!-- 錯誤提示 -->
-  <div id="toast">再想想看喔！這不是牠最喜歡的棲地</div>
+  <div id="toast">這裡好像不是牠最適合的家喔，再試試看！</div>
 
   <!-- 生態知識彈窗 -->
-  <div class="modal-backdrop" id="info-modal">
+  <div id="info-modal" class="modal-backdrop">
     <div class="modal-card">
       <img id="modal-img" src="" alt="">
       <h3 id="modal-title"></h3>
@@ -287,185 +284,175 @@
     </div>
   </div>
 
-  <!-- 全部過關彈窗 -->
-  <div class="modal-backdrop" id="win-modal">
+  <!-- 通關彈窗 -->
+  <div id="win-modal" class="modal-backdrop">
     <div class="modal-card">
       <h3>🎉 棲地救援大成功！</h3>
-      <p style="text-align:center; margin-top:10px;">
-        你已經成功透過夜間透視找出隱藏生態，並將所有動物送回正確的棲地！下次造訪牧場時，也請記得保持距離、尊重牠們的生活空間喔。
-      </p>
+      <p style="text-align: center;">你已經成功透過夜間透視找出隱藏生態，並將所有動物送回正確的棲地！下次造訪牧場時，也請記得保持距離、尊重牠們的生活空間喔。</p>
       <button class="modal-btn" onclick="location.reload()">再玩一次</button>
-      <div class="credit">飛牛棲地救援專題製作｜紫斑蝶圖片來源：嘎嘎昆蟲網</div>
+      <div class="credit-text">飛牛棲地救援專題製作｜紫斑蝶圖片來源：嘎嘎昆蟲網</div>
     </div>
   </div>
 
   <script>
-    // ================= 生態知識庫 =================
+    /* ================= 生態資料庫 ================= */
     const animalData = {
       cow: {
-        name: "乳牛（開闊草原）",
+        title: "乳牛（開闊草原）",
         img: "./cow.png",
-        hint: "乳牛需要大片草地吃草和散步喔！",
         desc: "乳牛屬於草食性動物，白天會在開闊的牧草地上覓食與反芻，夜晚則會成群休憩。草原環境中常能看見牛背鷺跟在牛群身旁啄食被驚起的昆蟲，形成有趣的微觀共生生態！"
       },
       goat: {
-        name: "山羊（開闊草原）",
+        title: "山羊（開闊草原）",
         img: "./goat.png",
-        hint: "山羊喜歡在乾燥開闊的草坡活動喔！",
         desc: "山羊活潑好動，擅長在草坡與高處攀爬，主要在日間活動覓食。維持開闊且乾燥的草地與木柵環境，能讓牠們健康成長，餵食時也要注意不要打擾牠們的休息空間。"
       },
       goose: {
-        name: "白鵝（生態水域）",
+        title: "白鵝（生態水域）",
         img: "./goose.png",
-        hint: "白鵝有蹼，最喜歡待在有水池的地方喔！",
         desc: "白鵝與鴨群是典型的水禽，腳掌長有蹼，非常依賴池塘與岸邊卵石環境進行戲水、理毛與覓食。保護牧場的水域清潔，不隨意丟棄異物，是守護水禽棲地的關鍵。"
       },
       butterfly: {
-        name: "紫斑蝶（複層林與蜜源區）",
+        title: "紫斑蝶（複層林與蜜源區）",
         img: "./butterfly.png",
-        hint: "紫斑蝶需要特定蜜源植物與林蔭遮蔽喔！",
         desc: "紫斑蝶是台灣珍貴的越冬遷移蝴蝶，極度依賴複層林環境與特定的蜜源植物（如大花咸豐草、高士佛澤蘭等）。白天飛舞吸蜜，夜晚或天冷時則會群聚在避風的樹林中棲息。"
       }
     };
 
-    // ================= 階段一：AR 偵測與捕捉邏輯 =================
-    const targetEl = document.getElementById("ar-target");
+    /* ================= 階段一：AR 互動邏輯 ================= */
+    const targetBoard = document.getElementById("target-board");
     const nightOverlay = document.getElementById("night-vision-overlay");
     const arHint = document.getElementById("ar-hint");
-    const catchCountEl = document.getElementById("catch-count");
-    let caughtAnimals = new Set();
+    const caughtCountEl = document.getElementById("caught-count");
+    let caughtCount = 0;
 
-    targetEl.addEventListener("targetFound", () => {
+    targetBoard.addEventListener("targetFound", () => {
       nightOverlay.classList.add("active");
       arHint.textContent = "快點擊畫面中浮現的動物！";
     });
 
-    targetEl.addEventListener("targetLost", () => {
+    targetBoard.addEventListener("targetLost", () => {
       nightOverlay.classList.remove("active");
-      arHint.textContent = "請將鏡頭重新對準生態看板";
+      arHint.textContent = "請將鏡頭對準草原看板，開啟夜間透視";
     });
 
-    ["cow", "goat", "goose", "butterfly"].forEach(id => {
-      const el = document.getElementById(`ar-${id}`);
+    ["ar-cow", "ar-goat", "ar-goose", "ar-butterfly"].forEach(id => {
+      const el = document.getElementById(id);
       el.addEventListener("click", () => {
-        if (caughtAnimals.has(id)) return;
-        caughtAnimals.add(id);
+        if (!el.getAttribute("visible")) return;
         el.setAttribute("visible", "false");
         el.classList.remove("clickable");
-        catchCountEl.textContent = caughtAnimals.size;
-
-        if (caughtAnimals.size === 4) {
-          setTimeout(enterDragStage, 600);
+        caughtCount++;
+        caughtCountEl.textContent = caughtCount;
+        if (caughtCount >= 4) {
+          setTimeout(enterGameStage, 400);
         }
       });
     });
 
-    function enterDragStage() {
+    function enterGameStage() {
       const sceneEl = document.querySelector("a-scene");
       if (sceneEl && sceneEl.systems["mindar-image-system"]) {
         try { sceneEl.systems["mindar-image-system"].stop(); } catch (e) {}
       }
       document.getElementById("stage-ar").style.display = "none";
-      document.getElementById("stage-drag").classList.add("active");
+      document.getElementById("stage-game").style.display = "flex";
     }
 
-    // ================= 階段二：手機觸控拖曳配對邏輯 =================
-    const cards = document.querySelectorAll(".animal-card");
+    /* ================= 階段二：Pointer Events 拖曳邏輯 ================= */
+    let matchedCount = 0;
+    const matchCountEl = document.getElementById("match-count");
     const zones = document.querySelectorAll(".habitat-zone");
-    const rescueCountEl = document.getElementById("rescue-count");
-    const toastEl = document.getElementById("toast");
-    let rescuedCount = 0;
+    const cards = document.querySelectorAll(".animal-card");
+
     let activeCard = null;
-    let toastTimer = null;
+    let ghostImg = null;
 
     cards.forEach(card => {
       card.addEventListener("pointerdown", e => {
-        if (card.classList.contains("solved")) return;
+        if (card.classList.contains("matched")) return;
         activeCard = card;
         card.setPointerCapture(e.pointerId);
-        card.classList.add("dragging");
-        moveCard(e.clientX, e.clientY);
+
+        ghostImg = document.createElement("img");
+        ghostImg.src = card.querySelector("img").src;
+        ghostImg.className = "dragging-ghost";
+        ghostImg.style.left = e.clientX + "px";
+        ghostImg.style.top = e.clientY + "px";
+        document.body.appendChild(ghostImg);
       });
 
       card.addEventListener("pointermove", e => {
-        if (!activeCard) return;
-        moveCard(e.clientX, e.clientY);
-        highlightZone(e.clientX, e.clientY);
+        if (!activeCard || !ghostImg) return;
+        ghostImg.style.left = e.clientX + "px";
+        ghostImg.style.top = e.clientY + "px";
+
+        zones.forEach(zone => {
+          const rect = zone.getBoundingClientRect();
+          const inside = e.clientX >= rect.left && e.clientX <= rect.right &&
+                         e.clientY >= rect.top && e.clientY <= rect.bottom;
+          zone.classList.toggle("drag-over", inside);
+        });
       });
 
       card.addEventListener("pointerup", e => {
         if (!activeCard) return;
-        const droppedZone = getZoneAt(e.clientX, e.clientY);
-        zones.forEach(z => z.classList.remove("highlight"));
+        let droppedZone = null;
+        zones.forEach(zone => {
+          zone.classList.remove("drag-over");
+          const rect = zone.getBoundingClientRect();
+          if (e.clientX >= rect.left && e.clientX <= rect.right &&
+              e.clientY >= rect.top && e.clientY <= rect.bottom) {
+            droppedZone = zone;
+          }
+        });
 
-        activeCard.classList.remove("dragging");
-        activeCard.style.left = "";
-        activeCard.style.top = "";
+        if (ghostImg) {
+          ghostImg.remove();
+          ghostImg = null;
+        }
 
         if (droppedZone) {
           const animalId = activeCard.dataset.id;
-          const correctHabitat = activeCard.dataset.habitat;
-          if (droppedZone.dataset.habitat === correctHabitat) {
-            handleCorrectDrop(activeCard, animalId, correctHabitat);
+          const correctHabitat = activeCard.dataset.target;
+          const chosenHabitat = droppedZone.dataset.habitat;
+
+          if (chosenHabitat === correctHabitat) {
+            activeCard.classList.add("matched");
+            const placedImg = document.createElement("img");
+            placedImg.src = animalData[animalId].img;
+            document.getElementById("placed-" + chosenHabitat).appendChild(placedImg);
+
+            matchedCount++;
+            matchCountEl.textContent = matchedCount;
+            showInfoModal(animalId);
           } else {
-            showToast(animalData[animalId].hint);
+            showToast();
           }
         }
         activeCard = null;
       });
     });
 
-    function moveCard(x, y) {
-      activeCard.style.left = (x - activeCard.offsetWidth / 2) + "px";
-      activeCard.style.top = (y - activeCard.offsetHeight / 2) + "px";
+    function showToast() {
+      const toast = document.getElementById("toast");
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 1800);
     }
 
-    function getZoneAt(x, y) {
-      for (const zone of zones) {
-        const rect = zone.getBoundingClientRect();
-        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-          return zone;
-        }
-      }
-      return null;
-    }
-
-    function highlightZone(x, y) {
-      zones.forEach(z => z.classList.remove("highlight"));
-      const target = getZoneAt(x, y);
-      if (target) target.classList.add("highlight");
-    }
-
-    function handleCorrectDrop(card, animalId, habitat) {
-      card.classList.add("solved");
-      rescuedCount++;
-      rescueCountEl.textContent = rescuedCount;
-
-      const img = document.createElement("img");
-      img.src = animalData[animalId].img;
-      document.getElementById(`placed-${habitat}`).appendChild(img);
-
-      // 顯示生態知識彈窗
-      document.getElementById("modal-img").src = animalData[animalId].img;
-      document.getElementById("modal-title").textContent = animalData[animalId].name;
-      document.getElementById("modal-desc").textContent = animalData[animalId].desc;
+    function showInfoModal(animalId) {
+      const data = animalData[animalId];
+      document.getElementById("modal-img").src = data.img;
+      document.getElementById("modal-title").textContent = data.title;
+      document.getElementById("modal-desc").textContent = data.desc;
       document.getElementById("info-modal").classList.add("show");
     }
 
     function closeInfoModal() {
       document.getElementById("info-modal").classList.remove("show");
-      if (rescuedCount === 4) {
-        setTimeout(() => {
-          document.getElementById("win-modal").classList.add("show");
-        }, 300);
+      if (matchedCount >= 4) {
+        document.getElementById("win-modal").classList.add("show");
       }
-    }
-
-    function showToast(msg) {
-      toastEl.textContent = msg;
-      toastEl.classList.add("show");
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2200);
     }
   </script>
 </body>

@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>飛牛棲地救援 - AR 透視與配對任務</title>
 
-  <!-- 引入 A-Frame 與 MindAR -->
+  <!-- 引入 A-Frame、MindAR 與 撒花特效 -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; }
@@ -60,6 +61,16 @@
       white-space: nowrap; backdrop-filter: blur(4px);
     }
 
+    /* 捕捉成功浮動提示 */
+    #catch-toast {
+      position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%) scale(0.8);
+      background: rgba(22, 163, 74, 0.92); color: #fff; padding: 12px 24px;
+      border-radius: 999px; font-size: 16px; font-weight: bold; z-index: 30;
+      opacity: 0; pointer-events: none; transition: all 0.25s ease;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3); white-space: nowrap;
+    }
+    #catch-toast.show { opacity: 1; transform: translate(-50%, -65%) scale(1); }
+
     /* ================= 階段二：2D 棲地配對介面 ================= */
     #stage-game {
       display: none; position: fixed; inset: 0; z-index: 50;
@@ -101,6 +112,11 @@
     .placed-animals img {
       height: 52px; width: auto; object-fit: contain;
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+      animation: popIn 0.3s ease;
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.4); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
     }
 
     /* 底部動物拖曳區 */
@@ -153,8 +169,8 @@
     .modal-card img {
       width: 110px; height: 90px; object-fit: contain; margin-bottom: 12px;
     }
-    .modal-card h3 { font-size: 20px; color: #1b5e20; margin-bottom: 12px; }
-    .modal-card p { font-size: 14px; color: #444; line-height: 1.65; margin-bottom: 20px; text-align: left; }
+    .modal-card h3 { font-size: 20px; color: #1b5e20; margin-bottom: 10px; }
+    .modal-card p { font-size: 14px; color: #444; line-height: 1.65; margin-bottom: 18px; text-align: left; }
     .modal-btn {
       width: 100%; background: #2e7d32; color: #fff; border: none;
       padding: 13px; border-radius: 999px; font-size: 15px; font-weight: bold;
@@ -162,6 +178,21 @@
     }
     .credit-text {
       margin-top: 14px; font-size: 11px; color: #888;
+    }
+
+    /* 星級評分區塊 */
+    .score-box {
+      background: #f0f7f0; border-radius: 14px; padding: 12px;
+      margin-bottom: 16px; border: 1px solid #d4e8d4;
+    }
+    .stars-display {
+      font-size: 32px; letter-spacing: 4px; margin-bottom: 4px;
+    }
+    .rank-title {
+      font-size: 15px; font-weight: bold; color: #1b5e20; margin-bottom: 6px;
+    }
+    .stats-row {
+      font-size: 13px; color: #555;
     }
   </style>
 </head>
@@ -180,6 +211,8 @@
         <button id="btn-skip" onclick="enterGameStage()">直接進配對</button>
       </div>
     </div>
+
+    <div id="catch-toast">✨ 成功捕捉！</div>
 
     <div id="ar-footer">
       <div class="counter-pill">點擊出現的動物進行捕捉：<span id="caught-count">0</span> / 4</div>
@@ -203,17 +236,17 @@
 
       <a-entity id="target-board" mindar-image-target="targetIndex: 0">
         <!-- 4 隻隱藏動物 -->
-        <a-image id="ar-cow" class="clickable" src="#img-cow" position="-0.32 -0.15 0.1" width="0.38" height="0.28"
-          animation="property: position; to: -0.32 -0.11 0.1; dir: alternate; dur: 1400; loop: true; easing: easeInOutSine"></a-image>
+        <a-image id="ar-cow" data-name="乳牛" class="clickable" src="#img-cow" position="-0.32 -0.15 0.1" width="0.38" height="0.28"
+          animation__float="property: position; to: -0.32 -0.11 0.1; dir: alternate; dur: 1400; loop: true; easing: easeInOutSine"></a-image>
 
-        <a-image id="ar-goat" class="clickable" src="#img-goat" position="0.32 -0.22 0.12" width="0.38" height="0.28"
-          animation="property: position; to: 0.32 -0.18 0.12; dir: alternate; dur: 1600; loop: true; easing: easeInOutSine"></a-image>
+        <a-image id="ar-goat" data-name="山羊" class="clickable" src="#img-goat" position="0.32 -0.22 0.12" width="0.38" height="0.28"
+          animation__float="property: position; to: 0.32 -0.18 0.12; dir: alternate; dur: 1600; loop: true; easing: easeInOutSine"></a-image>
 
-        <a-image id="ar-goose" class="clickable" src="#img-goose" position="-0.25 0.22 0.12" width="0.28" height="0.28"
-          animation="property: position; to: -0.25 0.26 0.12; dir: alternate; dur: 1300; loop: true; easing: easeInOutSine"></a-image>
+        <a-image id="ar-goose" data-name="白鵝" class="clickable" src="#img-goose" position="-0.25 0.22 0.12" width="0.28" height="0.28"
+          animation__float="property: position; to: -0.25 0.26 0.12; dir: alternate; dur: 1300; loop: true; easing: easeInOutSine"></a-image>
 
-        <a-image id="ar-butterfly" class="clickable" src="#img-butterfly" position="0.28 0.25 0.15" width="0.32" height="0.26"
-          animation="property: position; to: 0.28 0.31 0.15; dir: alternate; dur: 1100; loop: true; easing: easeInOutSine"></a-image>
+        <a-image id="ar-butterfly" data-name="紫斑蝶" class="clickable" src="#img-butterfly" position="0.28 0.25 0.15" width="0.32" height="0.26"
+          animation__float="property: position; to: 0.28 0.31 0.15; dir: alternate; dur: 1100; loop: true; easing: easeInOutSine"></a-image>
       </a-entity>
     </a-scene>
   </div>
@@ -284,10 +317,15 @@
     </div>
   </div>
 
-  <!-- 通關彈窗 -->
+  <!-- 通關彈窗（含星級評分） -->
   <div id="win-modal" class="modal-backdrop">
     <div class="modal-card">
       <h3>🎉 棲地救援大成功！</h3>
+      <div class="score-box">
+        <div class="stars-display" id="win-stars">⭐⭐⭐</div>
+        <div class="rank-title" id="win-rank">飛牛棲地守護大師</div>
+        <div class="stats-row">配對耗時：<span id="win-time">0</span> 秒 ｜ 失誤次數：<span id="win-mistakes">0</span> 次</div>
+      </div>
       <p style="text-align: center;">你已經成功透過夜間透視找出隱藏生態，並將所有動物送回正確的棲地！下次造訪牧場時，也請記得保持距離、尊重牠們的生活空間喔。</p>
       <button class="modal-btn" onclick="location.reload()">再玩一次</button>
       <div class="credit-text">飛牛棲地救援專題製作｜紫斑蝶圖片來源：嘎嘎昆蟲網</div>
@@ -295,6 +333,52 @@
   </div>
 
   <script>
+    /* ================= 內建合成音效引擎 (Web Audio API) ================= */
+    const SoundFX = {
+      ctx: null,
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === "suspended") {
+          this.ctx.resume();
+        }
+      },
+      playTone(freq, duration, type = "sine", startTimeOffset = 0, volume = 0.18) {
+        this.init();
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const now = this.ctx.currentTime + startTimeOffset;
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(volume, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + duration);
+      },
+      catch() {
+        this.playTone(523.25, 0.12, "triangle", 0);
+        this.playTone(659.25, 0.12, "triangle", 0.08);
+        this.playTone(783.99, 0.2, "triangle", 0.16);
+      },
+      success() {
+        this.playTone(659.25, 0.14, "sine", 0);
+        this.playTone(1046.5, 0.28, "sine", 0.1);
+      },
+      error() {
+        this.playTone(220, 0.15, "sawtooth", 0, 0.12);
+        this.playTone(165, 0.22, "sawtooth", 0.12, 0.12);
+      },
+      win() {
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((n, i) => this.playTone(n, 0.35, "triangle", i * 0.11, 0.2));
+      }
+    };
+
     /* ================= 生態資料庫 ================= */
     const animalData = {
       cow: {
@@ -319,12 +403,14 @@
       }
     };
 
-    /* ================= 階段一：AR 互動邏輯 ================= */
+    /* ================= 階段一：AR 互動與捕捉動畫 ================= */
     const targetBoard = document.getElementById("target-board");
     const nightOverlay = document.getElementById("night-vision-overlay");
     const arHint = document.getElementById("ar-hint");
     const caughtCountEl = document.getElementById("caught-count");
+    const catchToast = document.getElementById("catch-toast");
     let caughtCount = 0;
+    let catchToastTimer = null;
 
     targetBoard.addEventListener("targetFound", () => {
       nightOverlay.classList.add("active");
@@ -336,27 +422,53 @@
       arHint.textContent = "請將鏡頭對準草原看板，開啟夜間透視";
     });
 
+    function showCatchToast(name) {
+      catchToast.textContent = `✨ 成功捕捉 ${name}！`;
+      catchToast.classList.add("show");
+      clearTimeout(catchToastTimer);
+      catchToastTimer = setTimeout(() => catchToast.classList.remove("show"), 950);
+    }
+
     ["ar-cow", "ar-goat", "ar-goose", "ar-butterfly"].forEach(id => {
       const el = document.getElementById(id);
       el.addEventListener("click", () => {
-        if (!el.getAttribute("visible")) return;
-        el.setAttribute("visible", "false");
+        if (el.dataset.caught === "true") return;
+        el.dataset.caught = "true";
         el.classList.remove("clickable");
+
+        // 音效、震動與捕捉提示
+        SoundFX.catch();
+        if (navigator.vibrate) navigator.vibrate(40);
+        showCatchToast(el.dataset.name);
+
+        // 捕捉縮小上飛動畫
+        el.removeAttribute("animation__float");
+        const pos = el.getAttribute("position");
+        el.setAttribute("animation__shrink", "property: scale; to: 0 0 0; dur: 350; easing: easeInBack");
+        el.setAttribute("animation__flyup", `property: position; to: ${pos.x} ${pos.y + 0.35} ${pos.z}; dur: 350; easing: easeOutQuad`);
+
+        setTimeout(() => el.setAttribute("visible", "false"), 360);
+
         caughtCount++;
         caughtCountEl.textContent = caughtCount;
         if (caughtCount >= 4) {
-          setTimeout(enterGameStage, 400);
+          setTimeout(enterGameStage, 750);
         }
       });
     });
 
+    let gameStartTime = 0;
+    let mistakeCount = 0;
+
     function enterGameStage() {
+      SoundFX.init();
       const sceneEl = document.querySelector("a-scene");
       if (sceneEl && sceneEl.systems["mindar-image-system"]) {
         try { sceneEl.systems["mindar-image-system"].stop(); } catch (e) {}
       }
       document.getElementById("stage-ar").style.display = "none";
       document.getElementById("stage-game").style.display = "flex";
+      gameStartTime = Date.now();
     }
 
     /* ================= 階段二：Pointer Events 拖曳邏輯 ================= */
@@ -371,6 +483,7 @@
     cards.forEach(card => {
       card.addEventListener("pointerdown", e => {
         if (card.classList.contains("matched")) return;
+        SoundFX.init();
         activeCard = card;
         card.setPointerCapture(e.pointerId);
 
@@ -418,6 +531,9 @@
           const chosenHabitat = droppedZone.dataset.habitat;
 
           if (chosenHabitat === correctHabitat) {
+            SoundFX.success();
+            if (navigator.vibrate) navigator.vibrate(50);
+
             activeCard.classList.add("matched");
             const placedImg = document.createElement("img");
             placedImg.src = animalData[animalId].img;
@@ -427,6 +543,9 @@
             matchCountEl.textContent = matchedCount;
             showInfoModal(animalId);
           } else {
+            mistakeCount++;
+            SoundFX.error();
+            if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
             showToast();
           }
         }
@@ -451,7 +570,39 @@
     function closeInfoModal() {
       document.getElementById("info-modal").classList.remove("show");
       if (matchedCount >= 4) {
-        document.getElementById("win-modal").classList.add("show");
+        triggerWinScreen();
+      }
+    }
+
+    /* ================= 通關撒花與星級評分 ================= */
+    function triggerWinScreen() {
+      const elapsedSec = Math.max(1, Math.round((Date.now() - gameStartTime) / 1000));
+      let stars = "⭐⭐⭐";
+      let rank = "飛牛棲地守護大師";
+
+      if (mistakeCount >= 3) {
+        stars = "⭐";
+        rank = "見習生態探險家";
+      } else if (mistakeCount >= 1) {
+        stars = "⭐⭐";
+        rank = "優秀生態巡守員";
+      }
+
+      document.getElementById("win-stars").textContent = stars;
+      document.getElementById("win-rank").textContent = rank;
+      document.getElementById("win-time").textContent = elapsedSec;
+      document.getElementById("win-mistakes").textContent = mistakeCount;
+      document.getElementById("win-modal").classList.add("show");
+
+      SoundFX.win();
+      if (navigator.vibrate) navigator.vibrate([60, 40, 60, 40, 120]);
+
+      // 雙波彩帶撒花
+      if (typeof confetti === "function") {
+        confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 } });
+        setTimeout(() => {
+          confetti({ particleCount: 60, spread: 100, origin: { y: 0.55 } });
+        }, 350);
       }
     }
   </script>

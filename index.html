@@ -14,6 +14,54 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; }
     body, html { width: 100%; height: 100%; overflow: hidden; background: transparent; }
 
+    /* ================= 新增：新手引導頁（遊戲封面） ================= */
+    #stage-cover {
+      position: fixed; inset: 0; z-index: 100;
+      background: linear-gradient(160deg, #071326 0%, #0e2a22 55%, #163b28 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 28px 22px; text-align: center; color: #fff;
+      transition: opacity 0.45s ease;
+    }
+    #stage-cover.hidden { opacity: 0; pointer-events: none; }
+
+    .cover-badge {
+      background: rgba(253, 224, 71, 0.16); color: #fde047;
+      border: 1px solid rgba(253, 224, 71, 0.45);
+      padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: bold;
+      letter-spacing: 1px; margin-bottom: 16px;
+    }
+    .cover-title {
+      font-size: 32px; font-weight: 800; letter-spacing: 2px;
+      margin-bottom: 10px; text-shadow: 0 4px 16px rgba(0,0,0,0.45);
+    }
+    .cover-subtitle {
+      font-size: 14px; color: #cbd5e1; line-height: 1.65;
+      max-width: 310px; margin-bottom: 24px;
+    }
+    .cover-animals {
+      display: flex; justify-content: center; gap: 12px; margin-bottom: 24px;
+    }
+    .cover-animals img {
+      width: 58px; height: 50px; object-fit: contain;
+      background: rgba(255,255,255,0.08); border-radius: 14px; padding: 6px;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .cover-steps {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 18px; padding: 14px 18px; width: 100%; max-width: 320px;
+      text-align: left; margin-bottom: 28px; font-size: 13px; line-height: 1.75; color: #e2e8f0;
+    }
+    .cover-steps strong { color: #86efac; }
+    .btn-start {
+      width: 100%; max-width: 280px; padding: 15px 24px;
+      background: linear-gradient(135deg, #22c55e 0%, #15803d 100%);
+      color: #fff; border: none; border-radius: 999px;
+      font-size: 17px; font-weight: bold; letter-spacing: 1px; cursor: pointer;
+      box-shadow: 0 8px 24px rgba(34, 197, 94, 0.35);
+      transition: transform 0.15s;
+    }
+    .btn-start:active { transform: scale(0.96); }
+
     /* ================= 關鍵：只把底層相機畫面變暗成夜晚，AR 動物保持明亮 ================= */
     video {
       transition: filter 0.6s ease !important;
@@ -25,7 +73,7 @@
     /* ================= 階段一：AR 夜間透視介面 ================= */
     #stage-ar { position: relative; width: 100%; height: 100%; }
 
-    /* 深夜月光暗角 ＋ 螢火蟲容器（中間微透、四周深藍，不遮擋動物亮度） */
+    /* 深夜月光暗角 ＋ 螢火蟲容器 */
     #night-vision-overlay {
       position: fixed; inset: 0; pointer-events: none; z-index: 10;
       background: radial-gradient(circle, rgba(12, 28, 65, 0.12) 32%, rgba(2, 8, 24, 0.85) 100%);
@@ -190,45 +238,128 @@
     /* 知識彈窗與通關彈窗 */
     .modal-backdrop {
       display: none; position: fixed; inset: 0; z-index: 150;
-      background: rgba(0,0,0,0.6); align-items: center; justify-content: center;
-      padding: 20px; backdrop-filter: blur(2px);
+      background: rgba(0,0,0,0.65); align-items: center; justify-content: center;
+      padding: 20px; backdrop-filter: blur(3px);
     }
     .modal-backdrop.show { display: flex; }
     .modal-card {
       background: #fff; width: 100%; max-width: 340px; border-radius: 22px;
-      padding: 26px 22px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+      padding: 24px 20px; text-align: center; box-shadow: 0 12px 30px rgba(0,0,0,0.25);
     }
     .modal-card img {
       width: 110px; height: 90px; object-fit: contain; margin-bottom: 12px;
     }
     .modal-card h3 { font-size: 20px; color: #1b5e20; margin-bottom: 10px; }
-    .modal-card p { font-size: 14px; color: #444; line-height: 1.65; margin-bottom: 18px; text-align: left; }
+    .modal-card p { font-size: 14px; color: #444; line-height: 1.65; margin-bottom: 16px; text-align: left; }
     .modal-btn {
       width: 100%; background: #2e7d32; color: #fff; border: none;
       padding: 13px; border-radius: 999px; font-size: 15px; font-weight: bold;
-      cursor: pointer;
+      cursor: pointer; margin-bottom: 8px;
+    }
+    .modal-btn.secondary {
+      background: #e8f5e9; color: #1b5e20; margin-bottom: 0;
     }
     .credit-text {
-      margin-top: 14px; font-size: 11px; color: #888;
+      margin-top: 12px; font-size: 11px; color: #888;
     }
 
-    /* 星級評分區塊 */
+    /* 星級評分與名字輸入 */
     .score-box {
       background: #f0f7f0; border-radius: 14px; padding: 12px;
-      margin-bottom: 16px; border: 1px solid #d4e8d4;
+      margin-bottom: 14px; border: 1px solid #d4e8d4;
     }
-    .stars-display {
-      font-size: 32px; letter-spacing: 4px; margin-bottom: 4px;
+    .stars-display { font-size: 30px; letter-spacing: 4px; margin-bottom: 4px; }
+    .rank-title { font-size: 15px; font-weight: bold; color: #1b5e20; margin-bottom: 4px; }
+    .stats-row { font-size: 12px; color: #555; }
+
+    .name-input {
+      width: 100%; padding: 11px 14px; border-radius: 12px;
+      border: 2px solid #c8dbc8; font-size: 15px; text-align: center;
+      margin-bottom: 12px; outline: none;
     }
-    .rank-title {
-      font-size: 15px; font-weight: bold; color: #1b5e20; margin-bottom: 6px;
+    .name-input:focus { border-color: #2e7d32; }
+
+    /* ================= 新增：飛牛棲地守護者電子證書 ================= */
+    #cert-modal { z-index: 160; }
+    .cert-wrapper {
+      width: 100%; max-width: 350px; display: flex; flex-direction: column; align-items: center;
     }
-    .stats-row {
-      font-size: 13px; color: #555;
+    .cert-card {
+      width: 100%; background: #fffdf5; border-radius: 18px;
+      padding: 12px; box-shadow: 0 14px 36px rgba(0,0,0,0.4);
+      margin-bottom: 14px;
+    }
+    .cert-inner {
+      border: 3px double #b8860b; border-radius: 12px;
+      padding: 20px 16px; text-align: center; position: relative;
+      background: radial-gradient(circle at top, #ffffff 0%, #fef9e7 100%);
+    }
+    .cert-medal { font-size: 36px; margin-bottom: 4px; }
+    .cert-org {
+      font-size: 11px; letter-spacing: 2px; color: #8a6d1b;
+      font-weight: bold; margin-bottom: 4px;
+    }
+    .cert-heading {
+      font-size: 21px; font-weight: 800; color: #1b5e20;
+      margin-bottom: 14px; letter-spacing: 1px;
+    }
+    .cert-label { font-size: 12px; color: #666; margin-bottom: 4px; }
+    .cert-name {
+      font-size: 24px; font-weight: 800; color: #1e293b;
+      border-bottom: 2px solid #d4af37; display: inline-block;
+      padding: 0 16px 4px; margin-bottom: 12px;
+    }
+    .cert-rank-badge {
+      display: inline-block; background: #1b5e20; color: #fde047;
+      padding: 5px 14px; border-radius: 999px; font-size: 13px; font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .cert-desc {
+      font-size: 12px; color: #475569; line-height: 1.6; margin-bottom: 14px;
+    }
+    .cert-animals {
+      display: flex; justify-content: center; gap: 8px; margin-bottom: 12px;
+    }
+    .cert-animals img {
+      width: 44px; height: 38px; object-fit: contain;
+    }
+    .cert-footer {
+      display: flex; justify-content: space-between; font-size: 11px;
+      color: #78716c; border-top: 1px dashed #d6d3d1; padding-top: 8px;
+    }
+    .cert-tip {
+      color: #fde047; font-size: 13px; font-weight: bold; margin-bottom: 12px;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    }
+    .cert-actions {
+      display: flex; gap: 10px; width: 100%;
     }
   </style>
 </head>
 <body>
+
+  <!-- ================= 新手引導頁（遊戲封面） ================= -->
+  <div id="stage-cover">
+    <div class="cover-badge">WebAR 生態互動任務</div>
+    <h1 class="cover-title">🌙 飛牛棲地救援</h1>
+    <p class="cover-subtitle">
+      夜幕降臨，白天的牧場裡其實藏著許多平常看不見的生態秘密！快啟動夜間透視，把迷路的動物送回最適合牠們的家。
+    </p>
+
+    <div class="cover-animals">
+      <img src="./cow.png" alt="乳牛">
+      <img src="./goat.png" alt="山羊">
+      <img src="./goose.png" alt="白鵝">
+      <img src="./butterfly.png" alt="紫斑蝶">
+    </div>
+
+    <div class="cover-steps">
+      <div><strong>步驟 1｜夜間透視捕捉：</strong>對準草原看板掃描，點擊浮現的 4 隻隱藏動物。</div>
+      <div><strong>步驟 2｜棲地救援配對：</strong>將動物拖曳回正確棲地，解鎖生態知識並領取證書！</div>
+    </div>
+
+    <button class="btn-start" onclick="startGame()">開始夜間探險</button>
+  </div>
 
   <!-- ================= 階段一：AR 掃描 ================= -->
   <div id="stage-ar">
@@ -274,7 +405,6 @@
       <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="far: 10000; objects: .clickable"></a-camera>
 
       <a-entity id="target-board" mindar-image-target="targetIndex: 0">
-        <!-- 4 隻隱藏動物 -->
         <a-image id="ar-cow" data-name="乳牛" class="clickable" src="#img-cow" position="-0.32 -0.15 0.1" width="0.38" height="0.28"
           animation__float="property: position; to: -0.32 -0.11 0.1; dir: alternate; dur: 1400; loop: true; easing: easeInOutSine"></a-image>
 
@@ -356,7 +486,7 @@
     </div>
   </div>
 
-  <!-- 通關彈窗（含星級評分） -->
+  <!-- 通關彈窗（含名字輸入領取證書） -->
   <div id="win-modal" class="modal-backdrop">
     <div class="modal-card">
       <h3>🎉 棲地救援大成功！</h3>
@@ -365,9 +495,46 @@
         <div class="rank-title" id="win-rank">飛牛棲地守護大師</div>
         <div class="stats-row">配對耗時：<span id="win-time">0</span> 秒 ｜ 失誤次數：<span id="win-mistakes">0</span> 次</div>
       </div>
-      <p style="text-align: center;">你已經成功透過夜間透視找出隱藏生態，並將所有動物送回正確的棲地！下次造訪牧場時，也請記得保持距離、尊重牠們的生活空間喔。</p>
-      <button class="modal-btn" onclick="location.reload()">再玩一次</button>
+      <input type="text" id="player-name-input" class="name-input" placeholder="輸入你的名字，領取專屬證書" maxlength="12">
+      <button class="modal-btn" onclick="openCertificate()">🏆 領取守護者電子證書</button>
+      <button class="modal-btn secondary" onclick="location.reload()">再玩一次</button>
       <div class="credit-text">飛牛棲地救援專題製作｜紫斑蝶圖片來源：嘎嘎昆蟲網</div>
+    </div>
+  </div>
+
+  <!-- 專屬電子證書彈窗 -->
+  <div id="cert-modal" class="modal-backdrop">
+    <div class="cert-wrapper">
+      <div class="cert-card">
+        <div class="cert-inner">
+          <div class="cert-medal">🏅</div>
+          <div class="cert-org">FLYING COW ECOLOGY MISSION</div>
+          <div class="cert-heading">飛牛棲地守護者證書</div>
+          <div class="cert-label">茲證明生態探險家</div>
+          <div class="cert-name" id="cert-player-name">生態探險家</div>
+          <div>
+            <span class="cert-rank-badge" id="cert-rank-badge">⭐⭐⭐ 飛牛棲地守護大師</span>
+          </div>
+          <div class="cert-desc">
+            已成功透過 AR 夜間透視探索牧場隱藏生態，並將所有動物安全護送回最適合的自然棲地，特頒此狀以資鼓勵！
+          </div>
+          <div class="cert-animals">
+            <img src="./cow.png" alt="乳牛">
+            <img src="./goat.png" alt="山羊">
+            <img src="./goose.png" alt="白鵝">
+            <img src="./butterfly.png" alt="紫斑蝶">
+          </div>
+          <div class="cert-footer">
+            <span id="cert-stats">耗時 0 秒｜失誤 0 次</span>
+            <span id="cert-date">2026/11/23</span>
+          </div>
+        </div>
+      </div>
+      <div class="cert-tip">📸 歡迎截圖保存你的專屬榮譽證書！</div>
+      <div class="cert-actions">
+        <button class="modal-btn secondary" onclick="closeCertificate()">返回</button>
+        <button class="modal-btn" onclick="location.reload()">再玩一次</button>
+      </div>
     </div>
   </div>
 
@@ -399,6 +566,10 @@
         osc.start(now);
         osc.stop(now + duration);
       },
+      start() {
+        this.playTone(440, 0.12, "sine", 0, 0.14);
+        this.playTone(659.25, 0.2, "sine", 0.1, 0.14);
+      },
       catch() {
         this.playTone(523.25, 0.12, "triangle", 0);
         this.playTone(659.25, 0.12, "triangle", 0.08);
@@ -417,6 +588,14 @@
         notes.forEach((n, i) => this.playTone(n, 0.35, "triangle", i * 0.11, 0.2));
       }
     };
+
+    /* ================= 封面頁啟動遊戲 ================= */
+    function startGame() {
+      SoundFX.start(); // 立即解鎖 iOS 瀏覽器音效權限
+      const cover = document.getElementById("stage-cover");
+      cover.classList.add("hidden");
+      setTimeout(() => cover.style.display = "none", 460);
+    }
 
     /* ================= 生態資料庫 ================= */
     const animalData = {
@@ -477,12 +656,10 @@
         el.dataset.caught = "true";
         el.classList.remove("clickable");
 
-        // 音效、震動與捕捉提示
         SoundFX.catch();
         if (navigator.vibrate) navigator.vibrate(40);
         showCatchToast(el.dataset.name);
 
-        // 捕捉縮小上飛動畫
         el.removeAttribute("animation__float");
         const pos = el.getAttribute("position");
         el.setAttribute("animation__shrink", "property: scale; to: 0 0 0; dur: 350; easing: easeInBack");
@@ -500,6 +677,9 @@
 
     let gameStartTime = 0;
     let mistakeCount = 0;
+    let finalElapsedSec = 0;
+    let finalStars = "⭐⭐⭐";
+    let finalRank = "飛牛棲地守護大師";
 
     function enterGameStage() {
       SoundFX.init();
@@ -616,36 +796,61 @@
       }
     }
 
-    /* ================= 通關撒花與星級評分 ================= */
+    /* ================= 通關撒花、評分與電子證書 ================= */
     function triggerWinScreen() {
-      const elapsedSec = Math.max(1, Math.round((Date.now() - gameStartTime) / 1000));
-      let stars = "⭐⭐⭐";
-      let rank = "飛牛棲地守護大師";
+      finalElapsedSec = Math.max(1, Math.round((Date.now() - gameStartTime) / 1000));
+      finalStars = "⭐⭐⭐";
+      finalRank = "飛牛棲地守護大師";
 
       if (mistakeCount >= 3) {
-        stars = "⭐";
-        rank = "見習生態探險家";
+        finalStars = "⭐";
+        finalRank = "見習生態探險家";
       } else if (mistakeCount >= 1) {
-        stars = "⭐⭐";
-        rank = "優秀生態巡守員";
+        finalStars = "⭐⭐";
+        finalRank = "優秀生態巡守員";
       }
 
-      document.getElementById("win-stars").textContent = stars;
-      document.getElementById("win-rank").textContent = rank;
-      document.getElementById("win-time").textContent = elapsedSec;
+      document.getElementById("win-stars").textContent = finalStars;
+      document.getElementById("win-rank").textContent = finalRank;
+      document.getElementById("win-time").textContent = finalElapsedSec;
       document.getElementById("win-mistakes").textContent = mistakeCount;
       document.getElementById("win-modal").classList.add("show");
 
       SoundFX.win();
       if (navigator.vibrate) navigator.vibrate([60, 40, 60, 40, 120]);
 
-      // 雙波彩帶撒花
       if (typeof confetti === "function") {
         confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 } });
         setTimeout(() => {
           confetti({ particleCount: 60, spread: 100, origin: { y: 0.55 } });
         }, 350);
       }
+    }
+
+    function openCertificate() {
+      const inputName = document.getElementById("player-name-input").value.trim();
+      const playerName = inputName || "熱血生態探險家";
+
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}/${String(now.getDate()).padStart(2, "0")}`;
+
+      document.getElementById("cert-player-name").textContent = playerName;
+      document.getElementById("cert-rank-badge").textContent = `${finalStars} ${finalRank}`;
+      document.getElementById("cert-stats").textContent = `耗時 ${finalElapsedSec} 秒｜失誤 ${mistakeCount} 次`;
+      document.getElementById("cert-date").textContent = dateStr;
+
+      document.getElementById("win-modal").classList.remove("show");
+      document.getElementById("cert-modal").classList.add("show");
+
+      SoundFX.success();
+      if (typeof confetti === "function") {
+        confetti({ particleCount: 70, spread: 80, origin: { y: 0.5 } });
+      }
+    }
+
+    function closeCertificate() {
+      document.getElementById("cert-modal").classList.remove("show");
+      document.getElementById("win-modal").classList.add("show");
     }
   </script>
 </body>
